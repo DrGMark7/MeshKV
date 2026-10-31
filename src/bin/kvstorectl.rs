@@ -48,7 +48,7 @@ fn run(args: &[String]) -> Result<()> {
     let (pos, m) = parse_args(args)?;
     let cmd = pos.first().map(|s| s.as_str()).unwrap_or("help");
     if cmd == "help" || m.contains_key("help") {
-        println!("usage: kvstorectl <status|put|get|exists|delete|smoke> --server IP:PORT --token-file F [--ns N --key K --size-mib S --seed X --fingerprint F --expect-seed X --out FILE --interrupt-after CHUNKS]");
+        println!("usage: kvstorectl <status|put|get|exists|delete|smoke> --server IP:PORT --token-file F [--ns N --key K --size-mib S --seed X --file PATH --fingerprint F --expect-seed X --out FILE --interrupt-after CHUNKS]");
         return Ok(());
     }
     let c = Client::connect(cfg(&m)?)?;
@@ -65,7 +65,11 @@ fn run(args: &[String]) -> Result<()> {
             let size = (get_u64(&m, "size_mib", 1)? as f64 * 1048576.0) as usize;
             let seed = get_u64(&m, "seed", 1)?;
             let fp = m.get("fingerprint").map(|s| s.as_str()).unwrap_or("kvstorectl-test");
-            let data = gen_payload(seed, m.get("size_bytes").map(|s| s.parse().unwrap_or(size)).unwrap_or(size));
+            // --file PATH: store the bytes of an existing file (e.g. an engine snapshot bundle); otherwise a synthetic seeded payload
+            let data = match m.get("file") {
+                Some(path) => std::fs::read(path)?,
+                None => gen_payload(seed, m.get("size_bytes").map(|s| s.parse().unwrap_or(size)).unwrap_or(size)),
+            };
             if let Some(n) = m.get("interrupt_after") {
                 c.put_interrupted(ns, key, fp, "raw", &data, n.parse().unwrap_or(1))?;
                 println!("result=INTERRUPTED chunks={n} sha256={}", sha(&data));
