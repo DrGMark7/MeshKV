@@ -1,0 +1,29 @@
+[package]
+name = "rdma-kv-store"
+version = "0.1.0"
+edition = "2021"
+description = "Independent immutable KV-object file store with NIXL/UCX RoCE CPU-DRAM transport (opaque bytes only)"
+license = "MIT"
+publish = false
+
+[lib]
+name = "rdma_kv_store"
+path = "src/lib.rs"
+
+[[bin]]
+name = "kvstored"
+path = "src/bin/kvstored.rs"
+
+[[bin]]
+name = "kvstorectl"
+path = "src/bin/kvstorectl.rs"
+
+[dependencies]
+sha2 = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+libc = "0.2"
+
+[profile.release]
+opt-level = 3
+debug = false
